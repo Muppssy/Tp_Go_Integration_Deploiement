@@ -1,0 +1,9 @@
+github.com/google/uuid v1.3.1 h1:KjJaJ9iWZ3jOFZIf1Lqf4laDRCasjl0BCmnEGxkdLb4=
+github.com/google/uuid v1.3.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+gitlab.com/ggpack/logchain-go v1.1.0 h1:6Kj+eN+bza1Qg3ZKFq1RFUM8uSQUENtlvp2La+jRKEk=
+gitlab.com/ggpack/logchain-go v1.1.0/go.mod h1:cq1tOAWuP9Zc1HNR/tftXE9opEJJUXZGhPNlCWjE0mA=
+gitlab.com/ggpack/monkey v1.1.0/go.mod h1:7KtyFOGvOD2enbyKqGNrwO90DnBkI+UlRZPS6oJMUok=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
+gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=

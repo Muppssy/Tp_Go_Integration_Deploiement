@@ -1,0 +1,59 @@
+# DOC: https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+name: Build the app docker image
+
+on:
+  push
+
+jobs:
+  versioning:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.versioning.outputs.version }}
+      imageName: ${{ steps.versioning.outputs.imageName }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute versions
+        id: versioning
+        run: |
+          version=$(git rev-parse --short HEAD)
+          imageName=ghcr.io/${{github.repository}}:$version
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "imageName=$imageName" >> $GITHUB_OUTPUT
+          echo "the image name :'$imageName'"
+          echo "## 🔖 New version '$version'" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Image '$imageName'" >> $GITHUB_STEP_SUMMARY
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    needs: [versioning]
+
+    steps:
+      - uses: actions/checkout@v4
+        
+      - run: echo "${{secrets.GITHUB_TOKEN}}" | docker login ghcr.io -u "${{github.actor}}" --password-stdin
+   
+  
+  api-tests:
+    runs-on: ubuntu-latest
+    needs: [build-and-push, versioning]
+
+    # Our API server, running in the background
+    # services:
+    #   backend:
+    #     image: ${{needs.versioning.outputs.imageName}}
+    #     credentials:
+    #       username: ${{github.actor}}
+    #       password: ${{secrets.GITHUB_TOKEN}}
+    #     ports:
+    #     - 8080:8080
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: API tests
+        run: |
+          echo "## 🌐 API tests using ${{needs.v.outputs.imageName}}" >> $GITHUB_STEP_SUMMARY

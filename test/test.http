@@ -1,0 +1,18 @@
+# Use it with the VS Code extension "REST Client"
+# https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+
+###
+POST http://localhost:8080/api/cats
+
+{
+    "name": "rex",
+    "birthDate": "1997"
+}
+
+###
+GET http://localhost:8080/api/cats
+
+
+###
+GET http://localhost:8080/api/cats/226d09e2-8a9a-4631-b08c-d118af08c687
+

@@ -1,0 +1,79 @@
+openapi: 3.0.1
+info:
+  title: Cats demo REST API used to manage a local database of 🐈
+  version: 1.0.0
+servers:
+- url: ../api
+paths:
+  /cats:
+    get:
+      responses:
+        "200":
+          description: Success
+      summary: Lists all cats
+      tags:
+      - cats
+    post:
+      summary: Creates a new cat
+      requestBody:
+        description: The proto cat
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatProto'
+      responses:
+        "201":
+          description: Created
+      tags:
+      - cats
+
+  /cats/{catId}:
+    get:
+      parameters:
+      - in: path
+        name: catId
+        required: true
+        schema:
+          $ref: '#/components/schemas/CatId'
+      responses:
+        "200":
+          description: Success
+        "404":
+          description: Not found
+      summary: Gets a cat details
+      tags:
+      - cats
+    delete:
+      parameters:
+      - in: path
+        name: catId
+        required: true
+        schema:
+          $ref: '#/components/schemas/CatId'
+      responses:
+        "204":
+          description: The ref was deleted
+        "404":
+          description: Not found
+      summary: Deletes a cat
+      tags:
+      - cats
+
+components:
+  schemas:
+    CatProto:
+      type: object
+      properties:
+        birthDate:
+          type: string
+          example: "2023-02-14"
+        color:
+          type: string
+          example: "blue"
+        name:
+          type: string
+          example: "Felix"
+    CatId:
+      type: string
+      format: uuid
