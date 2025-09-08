@@ -25,7 +25,7 @@ func newApp() http.Handler {
 	router.HandleFunc("POST /api/cats", makeHandlerFunc(createCat))
 	router.HandleFunc("GET /api/cats", makeHandlerFunc(listCats))
 	router.HandleFunc("GET /api/cats/{catId}", makeHandlerFunc(getCat))
-	//router.HandleFunc("DELETE /api/cats/{catId}", makeHandlerFunc(deleteCat))
+	router.HandleFunc("DELETE /api/cats/{catId}", makeHandlerFunc(deleteCat))
 
 	fsys, _ := fs.Sub(content, "swagger-ui")
 	router.Handle("GET /swagger/", http.StripPrefix("/swagger", http.FileServer(http.FS(fsys))))
