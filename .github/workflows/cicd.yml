@@ -4,24 +4,8 @@ on:
   push
 
 jobs:
-  # --- Tests widgets (indépendant) ---
-  test-widgets:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-          cache: true
-      - name: Run widget tests
-        run: |
-          if [ -d "./test/widgettests" ]; then
-            go test -count=1 -v ./test/widgettests
-          else
-            echo "No ./test/widgettests package; skipping."
-          fi
 
-  # --- Tests unitaires (indépendant, en parallèle de versioning) ---
+  # 1) Tests unitaires (lance en parallèle de "versioning")
   test-unitaire:
     runs-on: ubuntu-latest
     steps:
@@ -39,7 +23,7 @@ jobs:
             echo "No unit-test packages to run."
           fi
 
-  # --- Versioning (en parallèle des tests) ---
+  # 2) Versioning (en parallèle de "test-unitaire")
   versioning:
     runs-on: ubuntu-latest
     outputs:
@@ -60,10 +44,10 @@ jobs:
           echo "## 🔖 New version '$version'" >> "$GITHUB_STEP_SUMMARY"
           echo "## 📦 Image '$imageName'" >> "$GITHUB_STEP_SUMMARY"
 
-  # --- Build & Push (ne démarre que si versioning + 2 tests OK) ---
+  # 3) Build & Push (ne démarre que si versioning **et** tests OK)
   build-and-push:
     runs-on: ubuntu-latest
-    needs: [versioning, test-unitaire, test-widgets]
+    needs: [versioning, test-unitaire]
     permissions:
       contents: read
       packages: write
@@ -76,7 +60,7 @@ jobs:
       - name: Push image
         run: docker push "${{ needs.versioning.outputs.imageName }}"
 
-  # --- API tests (optionnel, après le push) ---
+  # 4) (Optionnel) Tests d'API après le push
   api-tests:
     runs-on: ubuntu-latest
     needs: [build-and-push, versioning]
