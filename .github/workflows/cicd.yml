@@ -26,7 +26,6 @@ jobs:
   # 1) Versioning (← dépend de test-unitaire)
   versioning:
     runs-on: ubuntu-latest
-    needs: [test-unitaire]
     outputs:
       version: ${{ steps.versioning.outputs.version }}
       imageName: ${{ steps.versioning.outputs.imageName }}
