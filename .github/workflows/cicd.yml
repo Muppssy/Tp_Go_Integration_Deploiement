@@ -4,6 +4,18 @@ on:
   push
 
 jobs:
+  test-widgets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run widget tests
+        run: |
+          if [ -d "./test/widgettests" ]; then
+            go test -count=1 -v ./test/widgettests
+          else
+            echo "No ./test/widgettests package; skipping."
+          fi
+
   # 1) Tests unitaires (lance en parallèle de "versioning")
   test-unitaire:
     runs-on: ubuntu-latest
@@ -62,7 +74,7 @@ jobs:
   # 4) (Optionnel) Tests d'API après le push
   api-tests:
     runs-on: ubuntu-latest
-    needs: [build-and-push, versioning]
+    needs: [build-and-push, versioning, test-widgets]
     permissions:
       contents: read
       packages: read
