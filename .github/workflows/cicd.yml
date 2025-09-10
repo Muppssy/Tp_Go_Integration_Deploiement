@@ -4,47 +4,9 @@ on:
   push
 
 jobs:
-  # 1) VERSIONING
-  versioning:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.versioning.outputs.version }}
-      imageName: ${{ steps.versioning.outputs.imageName }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Compute versions
-        id: versioning
-        shell: bash
-        run: |
-          set -euo pipefail
-          version=$(git rev-parse --short HEAD)
-          repo_lc=$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')
-          imageName="ghcr.io/${repo_lc}:${version}"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "imageName=$imageName" >> "$GITHUB_OUTPUT"
-          echo "## 🔖 New version '$version'" >> "$GITHUB_STEP_SUMMARY"
-          echo "## 📦 Image '$imageName'" >> "$GITHUB_STEP_SUMMARY"
-
-  # 2) BUILD & PUSH
-  build-and-push:
-    runs-on: ubuntu-latest
-    needs: [versioning]
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-      - name: Login to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-      - name: Build image
-        run: docker build -t "${{ needs.versioning.outputs.imageName }}" .
-      - name: Push image
-        run: docker push "${{ needs.versioning.outputs.imageName }}"
-
-  # 3) TESTS UNITAIRES (dépend de versioning ET build-and-push)
+  # 0) Tests unitaires (démarre en premier)
   test-unitaire:
     runs-on: ubuntu-latest
-    needs: [versioning, build-and-push]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -60,7 +22,45 @@ jobs:
             echo "No unit-test packages to run."
           fi
 
-  # 4) TESTS API (intégration)
+  # 1) Versioning (↓ dépend de test-unitaire)
+  versioning:
+    runs-on: ubuntu-latest
+    needs: [test-unitaire]
+    outputs:
+      version: ${{ steps.versioning.outputs.version }}
+      imageName: ${{ steps.versioning.outputs.imageName }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute versions
+        id: versioning
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(git rev-parse --short HEAD)
+          repo_lc=$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')   # GHCR = lowercase
+          imageName="ghcr.io/${repo_lc}:${version}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "imageName=$imageName" >> "$GITHUB_OUTPUT"
+          echo "## 🔖 New version '$version'" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 📦 Image '$imageName'" >> "$GITHUB_STEP_SUMMARY"
+
+  # 2) Build & push (↓ dépend de test-unitaire ET versioning)
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [test-unitaire, versioning]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to GHCR
+        run: echo "${{secrets.GITHUB_TOKEN}}" | docker login ghcr.io -u "${{github.actor}}" --password-stdin
+      - name: Build image
+        run: docker build -t "${{ needs.versioning.outputs.imageName }}" .
+      - name: Push image
+        run: docker push "${{ needs.versioning.outputs.imageName }}"
+
+  # 3) API tests (intégration)
   api-tests:
     runs-on: ubuntu-latest
     needs: [build-and-push, versioning]
