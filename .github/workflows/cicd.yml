@@ -5,6 +5,23 @@ on:
   push
 
 jobs:
+  test-unitaire:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+        - uses: actions/setup-go@v5
+          with:
+            go-version: '1.25'
+            cache: true
+        - name: Run unit tests (exclude integration)
+          run: |
+            PKGS=$(go list ./... | grep -v '/test/apitests$' || true)
+            if [ -n "$PKGS" ]; then
+              go test -count=1 -v $PKGS
+            else
+              echo "No unit-test packages to run."
+            fi
+
   versioning:
     runs-on: ubuntu-latest
     outputs:
