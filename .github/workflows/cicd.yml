@@ -72,7 +72,7 @@ jobs:
           go-version: '1.25'
           cache: true
 
-      - name: Wait for API (no /health)
+      - name: Wait for API
         shell: bash
         run: |
           set -e

@@ -9,43 +9,39 @@ import (
 var initCatId string
 
 func init() {
-	// Preparation: delete all existing & create a cat
 	ids := []string{}
-	call("GET", "/cats", nil, nil, &ids)
+	_ = call("GET", "/cats", nil, nil, &ids)
 
+	// 2) Supprimer tout
 	for _, id := range ids {
 		code := 0
-		call("DELETE", "/cats/"+id, nil, &code, nil)
-		fmt.Println("DELETE /cats ->", code)
+		_ = call("DELETE", "/cats/"+id, nil, &code, nil)
+		fmt.Println("DELETE /cats/"+id, "->", code)
 	}
 
-	// Create a single cat into the DB
-	call("POST", "/cats", &CatModel{Name: "Toto"}, nil, &initCatId)
+	_ = call("POST", "/cats", &CatModel{Name: "Toto"}, nil, &initCatId)
+	fmt.Println("Created cat:", initCatId)
 }
 
 func TestGetCats(t *testing.T) {
-
 	code := 0
 	result := []string{}
-	err := call("GET", "/cats", nil, &code, &result)
-	if err != nil {
-		t.Error("Request error", err)
+
+	if err := call("GET", "/cats", nil, &code, &result); err != nil {
+		t.Fatalf("Request error: %v", err)
 	}
 
 	fmt.Println("GET /cats ->", code, result)
 
 	if code != http.StatusOK {
-		t.Error("We should get code 200, got", code)
+		t.Fatalf("expected 200, got %d", code)
 	}
 
-	if len(result) != 2 {
-		t.Error("We should get one item, got", len(result))
-		return
+	if len(result) != 1 {
+		t.Fatalf("expected 1 id, got %d (%v)", len(result), result)
 	}
 
-	if result[1] != initCatId {
-		t.Error("Listing the IDs, got", result[0])
+	if result[0] != initCatId {
+		t.Fatalf("expected id %s, got %v", initCatId, result)
 	}
 }
-
-// Continue implementing here ...
