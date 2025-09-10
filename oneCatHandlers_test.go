@@ -6,8 +6,6 @@ import (
 	"testing"
 )
 
-// --- Helpers ---
-
 func setDB(t *testing.T, db map[string]Cat) {
 	t.Helper()
 	orig := catsDatabase
@@ -21,8 +19,6 @@ func newReqWithCatID(method, id string) *http.Request {
 	r.SetPathValue("catId", id)
 	return r
 }
-
-// --- Tests getCat ---
 
 func TestGetCat_Found(t *testing.T) {
 	setDB(t, map[string]Cat{
@@ -55,9 +51,7 @@ func TestGetCat_NotFound(t *testing.T) {
 		t.Fatalf("resp=%v, want %q", resp, "Cat not found")
 	}
 }
-
 // --- Tests deleteCat ---
-
 func TestDeleteCat_RemovesAndReturnsCat(t *testing.T) {
 	setDB(t, map[string]Cat{
 		"id1": {ID: "id1", Name: "Toto"},
