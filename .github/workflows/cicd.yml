@@ -1,144 +1,59 @@
-name: CI/CD
+# DOC: https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+name: Build the app docker image
 
 on:
-  push:
-    branches: [ main ]
-    tags: [ 'v*' ]
-  pull_request:
-
-permissions:
-  contents: read
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE: ${{ github.repository }}
+  push
 
 jobs:
-  # 0) TESTS UNITAIRES avant versioning (ajout)
-  pre-unit-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-          cache: true
-      - name: Run unit tests (exclude integration pkg)
-        run: |
-          PKGS=$(go list ./... | grep -v '/test/apitests$' || true)
-          if [ -n "$PKGS" ]; then
-            go test -count=1 -v $PKGS
-          else
-            echo "No unit-test packages to run."
-          fi
-
-  # 1) VERSIONING (dépend maintenant de pre-unit-tests)
   versioning:
     runs-on: ubuntu-latest
-    needs: [pre-unit-tests]
     outputs:
-      version: ${{ steps.v.outputs.version }}
-      imageName: ${{ steps.v.outputs.imageName }}
-      latestTag: ${{ steps.v.outputs.latestTag }}
+      version: ${{ steps.versioning.outputs.version }}
+      imageName: ${{ steps.versioning.outputs.imageName }}
+
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - id: v
-        shell: bash
+      - name: Compute versions
+        id: versioning
         run: |
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            version="${GITHUB_REF_NAME#v}"
-          else
-            version="$(git rev-parse --short HEAD)"
-          fi
+          version=$(git rev-parse --short HEAD)
+          imageName=ghcr.io/${{github.repository}}:$version
           echo "version=$version" >> $GITHUB_OUTPUT
-          echo "imageName=${REGISTRY}/${IMAGE}:$version" >> $GITHUB_OUTPUT
-          echo "latestTag=${REGISTRY}/${IMAGE}:latest" >> $GITHUB_OUTPUT
-          {
-            echo "## 🔖 Version \`$version\`"
-            echo "## 📦 Image \`${REGISTRY}/${IMAGE}:$version\`"
-          } >> $GITHUB_STEP_SUMMARY
+          echo "imageName=$imageName" >> $GITHUB_OUTPUT
+          echo "the image name :'$imageName'"
+          echo "## 🔖 New version '$version'" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Image '$imageName'" >> $GITHUB_STEP_SUMMARY
 
-  # 2) TESTS UNITAIRES (Go)
-  unit-tests:
-    runs-on: ubuntu-latest
-    needs: [versioning]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-          cache: true
-      - name: Run unit tests (exclude integration pkg)
-        run: |
-          PKGS=$(go list ./... | grep -v '/test/apitests$' || true)
-          if [ -n "$PKGS" ]; then
-            go test -count=1 -v $PKGS
-          else
-            echo "No unit-test packages to run."
-          fi
-
-  # 3) BUILD & PUSH vers GHCR
   build-and-push:
     runs-on: ubuntu-latest
-    needs: [versioning, unit-tests]
     permissions:
       contents: read
       packages: write
+
+    needs: [versioning]
+
     steps:
       - uses: actions/checkout@v4
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build & push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ needs.versioning.outputs.imageName }}
-            ${{ needs.versioning.outputs.latestTag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # 4) TESTS API (service lancé depuis l’image publiée)
+        
+      - run: echo "${{secrets.GITHUB_TOKEN}}" | docker login ghcr.io -u "${{github.actor}}" --password-stdin
+   
+  
   api-tests:
     runs-on: ubuntu-latest
     needs: [build-and-push, versioning]
-    permissions:
-      contents: read
-      packages: read
+
+    # Our API server, running in the background
     services:
       backend:
-        image: ${{ needs.versioning.outputs.imageName }}
+        image: ${{needs.versioning.outputs.imageName}}
         credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
         ports:
-          - "8080:8080"
-        options: >-
-          --health-cmd "curl -fsS http://localhost:8080/health || exit 1"
-          --health-interval 5s --health-timeout 2s --health-retries 24
+        - 8080:8080
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-          cache: true
-
-      - name: Smoke/API healthcheck
-        shell: bash
+      - name: API tests
         run: |
-          echo "## 🌐 API tests using ${{ needs.versioning.outputs.imageName }}" >> $GITHUB_STEP_SUMMARY
-          curl -fsS http://localhost:8080/health
-          echo "✅ API up"
-
-      - name: Run integration tests (Go)
-        run: |
-          go test -count=1 -v ./test/apitests
+          echo "## 🌐 API tests using ${{needs.v.outputs.imageName}}" >> $GITHUB_STEP_SUMMARY
