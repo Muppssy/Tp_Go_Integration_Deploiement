@@ -7,6 +7,7 @@ jobs:
   # 0) Tests unitaires
   test-unitaire:
     runs-on: ubuntu-latest
+    needs: [test-unitaire, versioning, build-and-push]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
