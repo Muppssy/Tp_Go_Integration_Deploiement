@@ -24,7 +24,7 @@ jobs:
 
   versioning:
     runs-on: ubuntu-latest
-    needs: [test-unitaire]
+    needs: [versioning,test-unitaire]
     outputs:
       version: ${{ steps.versioning.outputs.version }}
       imageName: ${{ steps.versioning.outputs.imageName }}
