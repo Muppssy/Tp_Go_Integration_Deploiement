@@ -4,6 +4,7 @@ on:
   push
 
 jobs:
+  # --- Tests widgets (indépendant) ---
   test-widgets:
     runs-on: ubuntu-latest
     steps:
@@ -20,8 +21,7 @@ jobs:
             echo "No ./test/widgettests package; skipping."
           fi
 
-
-  # 1) Tests unitaires (lance en parallèle de "versioning")
+  # --- Tests unitaires (indépendant, en parallèle de versioning) ---
   test-unitaire:
     runs-on: ubuntu-latest
     steps:
@@ -39,7 +39,7 @@ jobs:
             echo "No unit-test packages to run."
           fi
 
-  # 2) Versioning (en parallèle de "test-unitaire")
+  # --- Versioning (en parallèle des tests) ---
   versioning:
     runs-on: ubuntu-latest
     outputs:
@@ -60,10 +60,10 @@ jobs:
           echo "## 🔖 New version '$version'" >> "$GITHUB_STEP_SUMMARY"
           echo "## 📦 Image '$imageName'" >> "$GITHUB_STEP_SUMMARY"
 
-  # 3) Build & Push (ne démarre que si versioning **et** tests OK)
+  # --- Build & Push (ne démarre que si versioning + 2 tests OK) ---
   build-and-push:
     runs-on: ubuntu-latest
-    needs: [versioning, test-unitaire]
+    needs: [versioning, test-unitaire, test-widgets]
     permissions:
       contents: read
       packages: write
@@ -76,7 +76,7 @@ jobs:
       - name: Push image
         run: docker push "${{ needs.versioning.outputs.imageName }}"
 
-  # 4) (Optionnel) Tests d'API après le push
+  # --- API tests (optionnel, après le push) ---
   api-tests:
     runs-on: ubuntu-latest
     needs: [build-and-push, versioning]
