@@ -1,13 +1,6 @@
 name: CI/CD
 
-on:
-  push:
-    branches: [ main ]
-    tags: [ 'v*' ]
-  pull_request:
-
-permissions:
-  contents: read
+on: push
 
 env:
   REGISTRY: ghcr.io
