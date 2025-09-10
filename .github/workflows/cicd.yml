@@ -96,6 +96,54 @@ jobs:
         run: |
           if [ -d "./test/apitests" ]; then
             go test -count=1 -v ./test/apitests
+            else
+              echo "No ./test/apitests package; skipping."
+            fi
+
+  deployed:
+      runs-on: ubuntu-latest
+      needs: [build-and-push, versioning]  
+      # attend le push & la version
+      if: ${{ github.ref_name != 'versions-branch' }}   # éviter la boucle quand on push sur cette branche
+      permissions:
+        contents: write
+      env:
+        VERSION_BRANCH: versions-branch     # ← mets ici le vrai nom de ta branche orpheline
+      steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create/switch to version branch and update version.txt
+        shell: bash
+        run: |
+          set -euo pipefail
+          BR="${VERSION_BRANCH}"
+          VER="${{ needs.versioning.outputs.version }}"
+
+          # S'assure d'avoir les refs distantes
+          git fetch origin +refs/heads/*:refs/remotes/origin/* --prune
+
+          if git show-ref --verify --quiet "refs/remotes/origin/${BR}"; then
+            echo "Branch '${BR}' exists on remote. Switching..."
+            # créer une branche locale à partir de la distante (ou la mettre à jour si elle existe déjà)
+            git switch -c "${BR}" "origin/${BR}" 2>/dev/null || git switch "${BR}"
+            git merge --ff-only "origin/${BR}" || true
           else
-            echo "No ./test/apitests package; skipping."
+            echo "Branch '${BR}' does not exist. Creating orphan branch..."
+            git switch --orphan "${BR}"
+            # Nettoyer le workspace (tout sauf .git)
+            git ls-files -z | xargs -0 --no-run-if-empty git rm -f -q || true
+            git clean -fdx -e .git || true
           fi
+
+          # Écrit la version
+          printf "%s\n" "$VER" > version.txt
+          git add version.txt
+          git -c user.name="${{ github.actor }}" \
+              -c user.email="${{ github.actor }}@users.noreply.github.com" \
+              commit -m "chore(deploy): set version to ${VER}" || echo "No changes to commit"
+
+          # Push sur la branche de version
+          git push origin HEAD:"${BR}"
