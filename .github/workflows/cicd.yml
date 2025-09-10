@@ -102,7 +102,7 @@ jobs:
 
   deployed:
       runs-on: ubuntu-latest
-      needs: [build-and-push, versioning]  
+      needs: [versioning, api-tests]  
       # attend le push & la version
       if: ${{ github.ref_name != 'versions-branch' }}   # éviter la boucle quand on push sur cette branche
       permissions:
