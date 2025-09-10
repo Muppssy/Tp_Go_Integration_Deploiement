@@ -8,6 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
       - name: Run widget tests
         run: |
           if [ -d "./test/widgettests" ]; then
@@ -15,6 +19,7 @@ jobs:
           else
             echo "No ./test/widgettests package; skipping."
           fi
+
 
   # 1) Tests unitaires (lance en parallèle de "versioning")
   test-unitaire:
